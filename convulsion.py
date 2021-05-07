@@ -1,40 +1,60 @@
 import numpy as np
+import argparse
+import matplotlib.pyplot as plt
+import cv2
 
 def multiplicar(matrix, filtro):
-    rowsMatrix, colsMatrix = matrix.shape
-    rowsFilter, colsFilter = filtro.shape
+    rows_matrix, cols_matrix = matrix.shape
+    rows_filter, cols_filter = filtro.shape
     result = 0.0
-    for row in range(rowsMatrix):
-        for col in range(colsMatrix):
+    for row in range(rows_matrix):
+        for col in range(cols_matrix):
             result += matrix[row, col] * filtro[row, col]
     return result
 
 def padding(padding, matrix):
-    paddedMatrix = np.zeros((matrix.shape[0]+padding*2, matrix.shape[1]+padding*2))
-    paddedMatrix[ padding : paddedMatrix.shape[0]-padding, padding : paddedMatrix.shape[1] - padding] = matrix
-    return paddedMatrix
+    # Si es una imagen RGB la convierte a una escala de grises
+    if len(matrix.shape) == 3:
+        matrix = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        print("Image Shape : {}".format(matrix.shape))
 
-matrix = np.array( [[1, 2, 3, 4, 5, 6],
-                    [7, 8, 9, 10, 11, 12],
-                    [0, 0, 1, 16, 17, 18],
-                    [0, 1, 0, 7, 23, 24],
-                    [1, 7, 6, 5, 4, 3] ])
+    padded_matrix = np.zeros((matrix.shape[0] + padding*2, matrix.shape[1] + padding*2))
+    padded_matrix[padding : padded_matrix.shape[0]-padding, padding : padded_matrix.shape[1]-padding] = matrix
+    
+    plt.imshow(padded_matrix, cmap='gray')
+    plt.title("Padded Image")
+    plt.show()
+    
+    return padded_matrix
 
-filterMatrix = np.array([[1, 1, 1],
-                        [0, 0, 0],
-                        [2,  10, 3]])
+
+def convulsion(matrix, filtro):
+    matrix = padding(5, matrix)
+    rows_matrix, cols_matrix = matrix.shape
+    rows_filter, cols_filter = filtro.shape
+    x = rows_matrix - rows_filter + 1
+    y = cols_matrix - cols_filter + 1
+
+    output = np.zeros((x,y))
+
+    for row in range(x):
+        for col in range(y):
+            output[row,col] = multiplicar(matrix[row : row + rows_filter, col:col + cols_filter], filtro)
+
+    plt.imshow(output, cmap='gray')
+    plt.title("Laplacian")
+    plt.show()
 
 
-rowsMatrix, colsMatrix = matrix.shape
-rowsFilter, colsFilter = filterMatrix.shape
-x = rowsMatrix - rowsFilter + 1
-y = colsMatrix - colsFilter + 1
+filtro = np.array([[-1, -1, -1],
+                    [-1, 8, -1],
+                    [-1, -1, -1]])
 
-output = np.zeros((x,y))
 
-for row in range(x):
-    for col in range(y):
-        output[row,col] = multiplicar(matrix[row : row + rowsFilter, col:col + colsFilter], filterMatrix)
+if __name__ == '__main__':
+    image = cv2.imread("arcos.jpg")
+    convulsion(image, filtro)
 
 #print(output)
 #print(padding(2, matrix))
